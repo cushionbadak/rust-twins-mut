@@ -4,27 +4,32 @@ LLM-based Rust code mutator from the [Rust-twins](https://dl.acm.org/doi/10.1145
 
 The authors state that their implementation and data are publicly available (at [project page](https://sites.google.com/view/rust-twins/index) and [anonymous repo](https://anonymous.4open.science/r/Rust-twins-481C/README.md)), but the repository itself is almost unusable, so this repository is a clean reimplementation.
 
-## Prerequisites
+## Quick Setup (Ubuntu)
 
-- Python 3.10+
-- [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) (`gcloud`)
-- [uv](https://github.com/astral-sh/uv)
-
-## Setup
+On a bare Ubuntu machine, run the setup script — it installs everything (gcloud CLI, uv, dependencies) and walks you through Google Cloud authentication:
 
 ```bash
-# Clone with submodules
+git clone --recurse-submodules https://github.com/cushionbadak/rust-twins-mut.git
+cd rust-twins-mut
+./setup.sh                  # opens browser for Google login
+./setup.sh --no-browser     # headless: prints a URL to auth from another machine
+```
+
+Then edit `gpt-oss-20b-google-cloud-call/config.py` to set your GCP project ID, and enable the GPT-OSS API in [Model Garden](https://console.cloud.google.com/vertex-ai/model-garden).
+
+## Manual Setup
+
+Prerequisites: Python 3.10+, [Google Cloud SDK](https://cloud.google.com/sdk/docs/install), [uv](https://github.com/astral-sh/uv).
+
+```bash
 git clone --recurse-submodules https://github.com/cushionbadak/rust-twins-mut.git
 cd rust-twins-mut
 
-# Authenticate with Google Cloud
 gcloud init
 gcloud auth application-default login
 
-# Configure your GCP project ID
 # Edit gpt-oss-20b-google-cloud-call/config.py and set project_id
 
-# Install dependencies
 uv sync
 ```
 
