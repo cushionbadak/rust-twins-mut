@@ -98,17 +98,3 @@ After a run, bundle the output directory into a single `.tar.gz`:
 | 18 | `replace_ap` | Replace arbitrary code segment |
 | 19 | `use_var` | Insert expression using existing variables |
 | 20 | `intro_var` | Insert new variable declarations |
-
-## Citation
-
-```bibtex
-@inproceedings{10.1145/3691620.3695059,
-  author    = {Jia, Jianfeng and Chen, Jingxuan and Wen, Yikang and Lu, Jie and Xie, Huanghui and Ren, Peng and Shi, Yuting},
-  title     = {Rust-twins: Automatic Rust Compiler Testing through Program Mutation and Dual Macros Generation},
-  year      = {2024},
-  doi       = {10.1145/3691620.3695059},
-  booktitle = {Proceedings of the 39th IEEE/ACM International Conference on Automated Software Engineering},
-  pages     = {600--612},
-  series    = {ASE '24}
-}
-```
