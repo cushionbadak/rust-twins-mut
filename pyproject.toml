@@ -1,0 +1,14 @@
+[project]
+name = "rust-twins-mut"
+version = "0.1.0"
+description = "LLM-based Rust code mutator from the Rust-twins paper"
+requires-python = ">=3.10"
+dependencies = [
+    "openai",
+    "google-auth",
+    "google-auth-httplib2",
+    "requests",
+]
+
+[project.scripts]
+rust-twins-mut = "rust_twins_mut.__main__:main"
