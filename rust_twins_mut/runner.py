@@ -18,20 +18,18 @@ from .prompts import prompt_dict
 
 # Global state for worker processes
 WORKER_ID = 0
-query_counter = None
 counter_lock = None
 stop_flag = None
 
 
-def _init_worker(counter, lock, stop):
+def _init_worker(wid_counter, lock, stop):
     """Initialize worker process with shared counter, lock, and stop flag."""
-    global WORKER_ID, query_counter, counter_lock, stop_flag
-    query_counter = counter
+    global WORKER_ID, counter_lock, stop_flag
     counter_lock = lock
     stop_flag = stop
     with lock:
-        counter.value += 1
-        WORKER_ID = counter.value
+        wid_counter.value += 1
+        WORKER_ID = wid_counter.value
 
 
 def _worker(config_tuple):
@@ -47,7 +45,7 @@ def _worker(config_tuple):
     """
     time.sleep(0.1)  # Small delay to prevent tight loop
 
-    global WORKER_ID, query_counter, counter_lock, stop_flag
+    global WORKER_ID, counter_lock, stop_flag
 
     rust_codes, output_dir, log_file, api_timeout = config_tuple
 
@@ -60,27 +58,24 @@ def _worker(config_tuple):
     prompt_template = prompt_dict[mutator_name]
     prompt = f"<s>{prompt_template.format(input=rust_code).strip()}"
 
-    with counter_lock:
-        current_count = query_counter.value
-
-    print(f"[Worker {WORKER_ID}] [Query {current_count}] Selected: {filepath} | Mutation: {mutator_name}")
+    print(f"[Worker {WORKER_ID}] Selected: {filepath} | Mutation: {mutator_name}")
 
     # Create client and call LLM
     try:
         client = GPTOSSClient()
         response = client.get_text(prompt)
     except Exception as e:
-        print(f"[Worker {WORKER_ID}] [Query {current_count}] LLM error: {e}")
+        print(f"[Worker {WORKER_ID}] LLM error: {e}")
         return (False, WORKER_ID)
 
     if not response:
-        print(f"[Worker {WORKER_ID}] [Query {current_count}] Failed to get LLM response")
+        print(f"[Worker {WORKER_ID}] Failed to get LLM response")
         return (False, WORKER_ID)
 
     # Extract Rust code from response
     mutated_code = extract_rust_code(response)
     if not mutated_code:
-        print(f"[Worker {WORKER_ID}] [Query {current_count}] Failed to extract Rust code from response")
+        print(f"[Worker {WORKER_ID}] Failed to extract Rust code from response")
         return (False, WORKER_ID)
 
     # Write output file
@@ -92,21 +87,21 @@ def _worker(config_tuple):
         with open(output_path, 'w') as f:
             f.write(mutated_code)
     except OSError as e:
-        print(f"[Worker {WORKER_ID}] [Query {current_count}] Error writing output file: {e}")
+        print(f"[Worker {WORKER_ID}] Error writing output file: {e}")
         return (False, WORKER_ID)
 
     # Log the result
     log_msg = (
-        f"{datetime.now().isoformat()} | Worker {WORKER_ID} | Query {current_count} "
+        f"{datetime.now().isoformat()} | Worker {WORKER_ID} "
         f"| {output_filename} | Mutation: {mutator_name} | Source: {filepath}\n"
     )
     try:
         with open(log_file, 'a') as f:
             f.write(log_msg)
     except OSError as e:
-        print(f"[Worker {WORKER_ID}] [Query {current_count}] Error writing to log file: {e}")
+        print(f"[Worker {WORKER_ID}] Error writing to log file: {e}")
 
-    print(f"[Worker {WORKER_ID}] [Query {current_count}] Success -> {output_filename}")
+    print(f"[Worker {WORKER_ID}] Success -> {output_filename}")
     return (True, WORKER_ID)
 
 
@@ -194,7 +189,7 @@ def continuous_fuzzing(folder_path, num_processes, global_timeout, output_dir, a
     print("-" * 80)
 
     # Shared state for worker processes
-    counter = Value('i', 0)
+    wid_counter = Value('i', 0)
     lock = Lock()
     stop = Value('i', 0)
 
@@ -229,7 +224,7 @@ def continuous_fuzzing(folder_path, num_processes, global_timeout, output_dir, a
     failed_mutations = 0
 
     try:
-        with Pool(processes=num_processes, initializer=_init_worker, initargs=(counter, lock, stop)) as pool:
+        with Pool(processes=num_processes, initializer=_init_worker, initargs=(wid_counter, lock, stop)) as pool:
             pending_results = []
             task_config = (rust_codes, output_path, log_file, api_timeout)
 
@@ -304,13 +299,14 @@ def continuous_fuzzing(folder_path, num_processes, global_timeout, output_dir, a
     end_time = datetime.now()
     duration = (end_time - start_time).total_seconds()
 
+    total = successful_mutations + failed_mutations
     summary = f"""
 {"-" * 80}
 Fuzzing completed at: {end_time.isoformat()}
 Total duration: {duration:.2f} seconds
 Successful mutations: {successful_mutations}
-Failed mutations: {failed_mutations}
-Total queries: {counter.value}
+Failed/cancelled: {failed_mutations}
+Total tasks: {total}
 """
 
     print("\n" + "=" * 80)
