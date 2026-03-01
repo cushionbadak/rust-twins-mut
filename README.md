@@ -60,6 +60,15 @@ uv run python -m rust_twins_mut ./seeds \
 | `--grace-period` | 30 | Seconds to wait for running tasks after timeout |
 | `--output` | `./fuzz_output` | Output directory for mutated files |
 
+## Archiving Results
+
+After a run, bundle the output directory into a single `.tar.gz`:
+
+```bash
+./archive_results.sh ./fuzz_output                        # auto-named with timestamp
+./archive_results.sh ./fuzz_output my_experiment.tar.gz   # custom name
+```
+
 ## Mutation Types
 
 | # | Name | Description |

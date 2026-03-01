@@ -15,6 +15,11 @@ env/
 # Output
 fuzz_output*/
 *.log
+*.tar.gz
+
+# Seeds (user-provided, not tracked)
+seeds/*
+!seeds/.gitkeep
 
 # IDE
 .vscode/
